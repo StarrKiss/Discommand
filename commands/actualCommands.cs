@@ -114,7 +114,7 @@ namespace discBot.commands{
             
             var infoEmbed = new DiscordEmbedBuilder {
                 Title = existingShip.propername,
-                Description =  existingShip.description + "\n Health: " + existingShip.health + "\n Speed: " + existingShip.speed + "\n DPS: " + existingShip.dps + "\n Cargo: " + existingShip.cargospace,
+                Description =  existingShip.description + "\n Health: " + existingUser.shiphealth + "/" + existingShip.health + "\n Speed: " + existingShip.speed + "\n DPS: " + existingShip.dps + "\n Cargo: " + existingShip.cargospace,
                 
             };
 
