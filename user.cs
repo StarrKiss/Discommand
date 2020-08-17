@@ -20,6 +20,9 @@ namespace discBot
          [JsonProperty("system")]
         public string system;
 
+        [JsonProperty("shiphealth")]
+        public int shiphealth;
+
 
         
     }

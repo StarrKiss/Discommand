@@ -54,6 +54,8 @@ namespace discBot
              Commands = Client.UseCommandsNext(commandsConfig);
 
              Commands.RegisterCommands<discBot.commands.actualCommands>();
+
+             Commands.RegisterCommands<discBot.commands.devCommands>();
             
             await Client.ConnectAsync();
 

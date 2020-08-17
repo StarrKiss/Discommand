@@ -47,10 +47,11 @@ namespace discBot.commands{
             newUser.id = id;
             newUser.charName = name;
             newUser.money = 0;
-            newUser.ship = "Starhopper";
+            newUser.ship = "starhopper";
             newUser.system = "Earth";
+            newUser.shiphealth = 100;
             string json = JsonConvert.SerializeObject(newUser);
-
+            
             await ctx.Channel.SendMessageAsync("Your character has been succesfully created!").ConfigureAwait(false);
             
             using (StreamWriter outputFile = new StreamWriter("users/" + newUser.id + ".json"))
@@ -74,12 +75,54 @@ namespace discBot.commands{
                 json = await sr.ReadToEndAsync().ConfigureAwait(false);
             
             existingUser = JsonConvert.DeserializeObject<user>(json);
+            
+            starship existingShip;
+            string shipJson;
+            using(var fs = File.OpenRead("starships/" + existingUser.ship + ".json"))
+            using(var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                shipJson = await sr.ReadToEndAsync().ConfigureAwait(false);
+            
+            existingShip = JsonConvert.DeserializeObject<starship>(shipJson);
+
             var infoEmbed = new DiscordEmbedBuilder {
                 Title = existingUser.charName,
-                Description = "Gender: " + existingUser.gender + "\n Money: " + existingUser.money + "\n Starship: " + existingUser.ship + "\n System: " + existingUser.system
+                Description = "Gender: " + existingUser.gender + "\n Money: " + existingUser.money + "\n Starship: " + existingShip.propername + "\n System: " + existingUser.system
             };
 
             await ctx.Channel.SendMessageAsync(embed: infoEmbed).ConfigureAwait(false);
+        }
+
+        [Command("shipinfo")]
+        public async Task shipinfo(CommandContext ctx){
+            user existingUser;
+            starship existingShip;
+            string id = ctx.User.Id.ToString();
+            string userjson;
+
+            using(var fs = File.OpenRead("users/" + id + ".json"))
+            using(var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                userjson = await sr.ReadToEndAsync().ConfigureAwait(false);
+            
+            existingUser = JsonConvert.DeserializeObject<user>(userjson);
+
+            string shipJson;
+            using(var fs = File.OpenRead("starships/" + existingUser.ship + ".json"))
+            using(var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                shipJson = await sr.ReadToEndAsync().ConfigureAwait(false);
+            
+            existingShip = JsonConvert.DeserializeObject<starship>(shipJson);
+            
+            var infoEmbed = new DiscordEmbedBuilder {
+                Title = existingShip.propername,
+                Description =  existingShip.description + "\n Health: " + existingShip.health + "\n Speed: " + existingShip.speed + "\n DPS: " + existingShip.dps + "\n Cargo: " + existingShip.cargospace,
+                
+            };
+
+            
+
+            await ctx.Channel.SendMessageAsync(embed: infoEmbed).ConfigureAwait(false);
+
+            
         }
 
 
