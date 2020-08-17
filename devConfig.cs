@@ -10,7 +10,7 @@ namespace discBot
         [JsonProperty("id")]
         public string id;
         
-
+        //ignore this
 
         
     }
