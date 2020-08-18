@@ -48,12 +48,12 @@ namespace discBot.commands{
             newUser.charName = name;
             newUser.money = 0;
             newUser.ship = "starhopper";
-            newUser.system = "Earth";
+            newUser.system = "earth";
             newUser.shiphealth = 100;
             newUser.cargo = new string[5];
             newUser.cargo[0] = "An old BlockBuster video card";
             newUser.cargo[1] = "A letter from your dead mother mocking your failure to get a job.";
-            newUser.systemarea = "Earth Station";
+            newUser.systemarea = "station";
             string json = JsonConvert.SerializeObject(newUser);
             
             await ctx.Channel.SendMessageAsync("Your character has been succesfully created!").ConfigureAwait(false);
@@ -71,22 +71,15 @@ namespace discBot.commands{
         [Command("info")]
         public async Task info(CommandContext ctx){
             user existingUser;
+            discBot.tools.shipTools tools = new discBot.tools.shipTools();
             string id = ctx.User.Id.ToString();
-            string json;
-
-            using(var fs = File.OpenRead("users/" + id + ".json"))
-            using(var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                json = await sr.ReadToEndAsync().ConfigureAwait(false);
             
-            existingUser = JsonConvert.DeserializeObject<user>(json);
+            existingUser = await tools.readUser(id);
             
             starship existingShip;
-            string shipJson;
-            using(var fs = File.OpenRead("starships/" + existingUser.ship + ".json"))
-            using(var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                shipJson = await sr.ReadToEndAsync().ConfigureAwait(false);
             
-            existingShip = JsonConvert.DeserializeObject<starship>(shipJson);
+            
+            existingShip = await tools.readShip(existingUser.ship);
 
             var infoEmbed = new DiscordEmbedBuilder {
                 Title = existingUser.charName,
@@ -155,23 +148,18 @@ namespace discBot.commands{
 
         [Command("shipinfo")]
         public async Task shipinfo(CommandContext ctx){
+            discBot.tools.shipTools tools = new discBot.tools.shipTools();
             user existingUser;
             starship existingShip;
             string id = ctx.User.Id.ToString();
-            string userjson;
-
-            using(var fs = File.OpenRead("users/" + id + ".json"))
-            using(var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                userjson = await sr.ReadToEndAsync().ConfigureAwait(false);
             
-            existingUser = JsonConvert.DeserializeObject<user>(userjson);
 
-            string shipJson;
-            using(var fs = File.OpenRead("starships/" + existingUser.ship + ".json"))
-            using(var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                shipJson = await sr.ReadToEndAsync().ConfigureAwait(false);
             
-            existingShip = JsonConvert.DeserializeObject<starship>(shipJson);
+            
+            existingUser = await tools.readUser(id);
+            
+            
+            existingShip = await tools.readShip(existingUser.ship);
             
             var infoEmbed = new DiscordEmbedBuilder {
                 Title = existingShip.propername,
@@ -186,8 +174,111 @@ namespace discBot.commands{
             
         }
 
+        [Command("sysinfo")]
+        public async Task sysinfo(CommandContext ctx){
+            discBot.tools.shipTools tools = new discBot.tools.shipTools();
+            SingleSystem existingSystem;
+            user existingUser;
+
+            string id = ctx.User.Id.ToString();
+            
+            
+            existingUser = await tools.readUser(id);
+
+            string sysJson;
+            using(var fs = File.OpenRead("systems/" + existingUser.system + "/" + existingUser.system + ".json"))
+            using(var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                sysJson = await sr.ReadToEndAsync().ConfigureAwait(false);
+            
+            existingSystem = JsonConvert.DeserializeObject<SingleSystem>(sysJson);
+
+            
+
+            string neighbors = string.Join(",", existingSystem.neighbors);
+            string Locations = string.Join(",", existingSystem.locations);
 
 
+            var infoEmbed = new DiscordEmbedBuilder {
+                Title = existingSystem.name,
+                Description =  "Description: " + existingSystem.description + "\n \n Neighbors: " + neighbors + "\n Locations: " + Locations 
+                
+            };
+
+            await ctx.Channel.SendMessageAsync(embed: infoEmbed).ConfigureAwait(false);
+
+        }
+
+        [Command("jump")]
+        public async Task warp(CommandContext ctx){
+            discBot.tools.shipTools tools = new discBot.tools.shipTools();
+            await ctx.Channel.SendMessageAsync("Want to go to another system, or to another location here? \n (s for in this system, l for another system)").ConfigureAwait(false);
+            var interactivity = ctx.Client.GetInteractivity();
+            var message = await interactivity.WaitForMessageAsync(x => x.Channel == ctx.Channel && x.Author == ctx.User).ConfigureAwait(false);
+            
+            SingleSystem existingSystem;
+            user existingUser;
+
+            string id = ctx.User.Id.ToString();
+            
+            user newUser;
+
+            
+            
+            existingUser = await tools.readUser(id);
+            newUser = existingUser;
+
+            string sysJson;
+            using(var fs = File.OpenRead("systems/" + existingUser.system + "/" + existingUser.system + ".json"))
+            using(var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                sysJson = await sr.ReadToEndAsync().ConfigureAwait(false);
+            
+            existingSystem = JsonConvert.DeserializeObject<SingleSystem>(sysJson);
+
+            if(message.Result.Content == "l"){
+                string output = "";
+                for(int i = 0; i < existingSystem.neighbors.Length; i++){
+                    string tempJson;
+                    SingleSystem tempSystem;
+
+                    
+                    using(var fs = File.OpenRead("systems/" + existingSystem.neighbors[i] + "/" + existingSystem.neighbors[i] + ".json"))
+                    using(var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                tempJson = await sr.ReadToEndAsync().ConfigureAwait(false);
+            
+                 tempSystem = JsonConvert.DeserializeObject<SingleSystem>(tempJson);
+
+
+                    output = output + i + ". " + tempSystem.name + "\n";
+                }   
+                await ctx.Channel.SendMessageAsync(output).ConfigureAwait(false);
+                await ctx.Channel.SendMessageAsync("Choose your planet!").ConfigureAwait(false);
+                
+                message = await interactivity.WaitForMessageAsync(x => x.Channel == ctx.Channel && x.Author == ctx.User).ConfigureAwait(false);
+                newUser.system = existingSystem.neighbors[Int32.Parse(message.Result.Content)];
+
+                SingleSystem destination;
+                string outJson;
+                using(var fs = File.OpenRead("systems/" + existingSystem.neighbors[Int32.Parse(message.Result.Content)] + "/" + existingSystem.neighbors[Int32.Parse(message.Result.Content)] + ".json"))
+                using(var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                outJson = await sr.ReadToEndAsync().ConfigureAwait(false);
+            
+                 destination = JsonConvert.DeserializeObject<SingleSystem>(outJson);
+
+                 newUser.systemarea = destination.locations[0];
+
+                 string finaljson = JsonConvert.SerializeObject(newUser);
+            
+            await ctx.Channel.SendMessageAsync("Welcome to " + destination.name + "!").ConfigureAwait(false);
+            
+            using (StreamWriter outputFile = new StreamWriter("users/" + newUser.id + ".json"))
+        {
+            await outputFile.WriteAsync(finaljson);
+        }
+            }
+
+            
+            
+        }
     }
 
 

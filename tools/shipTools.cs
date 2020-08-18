@@ -64,7 +64,34 @@ namespace discBot.tools{
         
     } 
 
+
+    public async Task<starship> readShip(string id){
+            
+            starship existingstarship;
+            string shipJson;
+            using(var fs = File.OpenRead("starships/" + id + ".json"))
+            using(var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                shipJson = await sr.ReadToEndAsync().ConfigureAwait(false);
+            await Task.Delay(1);
+            existingstarship = JsonConvert.DeserializeObject<starship>(shipJson);
+            return existingstarship;
     }
 
+    public async Task<user> readUser(string id){
+            
+            user existingUser;
+            string userJson;
+            using(var fs = File.OpenRead("users/" + id + ".json"))
+            using(var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                userJson = await sr.ReadToEndAsync().ConfigureAwait(false);
+            await Task.Delay(1);
+            existingUser = JsonConvert.DeserializeObject<user>(userJson);
+            return existingUser;
+        }
+    }
 
-}
+    }
+
+    
+
+
